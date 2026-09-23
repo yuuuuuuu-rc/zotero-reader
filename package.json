@@ -1,0 +1,14 @@
+{
+  "name": "zotero-research-companion",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "start": "node server.mjs --open",
+    "demo": "node server.mjs --demo --open",
+    "test": "node --test test/*.test.mjs",
+    "check:zotero": "node scripts/check-zotero.mjs"
+  },
+  "dependencies": { "@modelcontextprotocol/sdk": "1.30.1" }
+}

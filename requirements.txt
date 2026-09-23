@@ -1,0 +1,2 @@
+zotero-mcp-server==0.13.0
+fastmcp==3.4.7
