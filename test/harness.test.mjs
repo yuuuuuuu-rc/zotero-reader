@@ -6,7 +6,7 @@ import os from 'node:os';
 import { Store, publicPaper } from '../lib/store.mjs';
 import { Harness, evidenceFor, validateCitations } from '../lib/harness.mjs';
 import { DemoBridge, DemoProvider } from '../lib/demo.mjs';
-import { Provider, baseURL } from '../lib/provider.mjs';
+import { Provider, baseURL, inferProvider, providerRequest } from '../lib/provider.mjs';
 import { createApp } from '../server.mjs';
 import http from 'node:http';
 
@@ -42,6 +42,17 @@ test('fabricated citations and tools outside the scope are rejected without acce
   harness.provider={async complete(){return {tokens:1,message:{tool_calls:[{id:'x',type:'function',function:{name:'delete_item',arguments:'{}'}}]}};}};
   await harness.start('DEMO0001',{question:'Try again',page:1});
   paper=await finished(harness,store); assert.equal(paper.job.status,'failed'); assert.match(paper.job.step,/outside/); assert.equal(paper.cards.length,0);
+});
+test('structured final-answer tool works across compatible providers',async t=>{
+  let submitted=false;
+  const provider={async complete(messages,tools){
+    const evidence=JSON.stringify(messages).match(/E[a-f0-9]{16}/)?.[0];
+    assert.ok(tools.some(tool=>tool.function.name==='submit_research_answer'));
+    submitted=true;
+    return {tokens:3,message:{tool_calls:[{id:'final',type:'function',function:{name:'submit_research_answer',arguments:JSON.stringify({answer:`Supported [${evidence}]`,memory:'Checked evidence.',card:null})}}]}};
+  }};
+  const {store,harness}=await fixture(t,provider);await harness.start('DEMO0001',{question:'Question',page:1});
+  const paper=await finished(harness,store);assert.equal(submitted,true);assert.equal(paper.job.status,'complete');assert.equal(paper.messages.length,1);
 });
 test('tool arguments cannot select another paper',async t=>{
   const {store,harness}=await fixture(t,{async complete(){return {tokens:1,message:{tool_calls:[{id:'x',type:'function',function:{name:'read_page',arguments:'{"page":1,"item_key":"OTHER001"}'}}]}};}});
@@ -95,4 +106,13 @@ test('provider sends tool results, retries temporary failures, and never forward
   const result=await provider.complete([{role:'user',content:'test'}],[],new AbortController().signal);assert.equal(calls,2);assert.equal(result.tokens,12);
   assert.equal(baseURL('https://generativelanguage.googleapis.com/v1beta'),'https://generativelanguage.googleapis.com/v1beta/openai');
   assert.throws(()=>baseURL('http://untrusted.example/v1'));
+});
+test('provider templates select safe structured-output modes',()=>{
+  const messages=[{role:'user',content:'Return JSON'}],tools=[{type:'function',function:{name:'x',strict:true,parameters:{type:'object'}}}];
+  const deepseek=providerRequest({provider:'deepseek',model:'deepseek-flash',baseUrl:'https://api.deepseek.com'},messages,tools);
+  assert.equal(deepseek.response_format.type,'json_object');assert.equal(deepseek.thinking.type,'disabled');assert.equal(deepseek.tools[0].function.strict,undefined);
+  const openai=providerRequest({provider:'openai',model:'gpt-test',baseUrl:'https://api.openai.com/v1'},messages,tools);
+  assert.equal(openai.response_format.type,'json_schema');assert.equal(openai.tools[0].function.name,'x');assert.equal(openai.tools[0].function.strict,true);
+  const claude=providerRequest({provider:'anthropic',model:'claude-test',baseUrl:'https://api.anthropic.com/v1'},messages,tools);
+  assert.equal(claude.response_format,undefined);assert.equal(inferProvider('https://openrouter.ai/api/v1'),'openrouter');
 });

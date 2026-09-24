@@ -14,8 +14,9 @@ const zh = {
   'Ask what a claim means, what evidence supports it, or where its limits are. Answers link to the pages actually read.':'询问论点的含义、支持它的证据或它的局限。回答会链接到实际读取的原文页面。',
   'AI study records stay behind the conversation. Accepted cards are yours to edit.':'AI 阅读记录在后台维护。接受后的笔记卡片由你编辑。',
   'Your question':'你的问题','What does this experiment establish—and what does it leave uncertain?':'这个实验说明了什么？还有哪些不确定之处？','Discuss with AI':'与 AI 讨论',
-  'Model connection':'模型连接','Your API credentials are stored locally, outside this project.':'API 密钥保存在本机，不放入项目仓库。',
+  'Model connection':'模型连接','Your API credentials are stored locally, outside this project.':'API 密钥保存在本机，不放入项目仓库。','Provider template':'模型服务模板',
   'OpenAI-compatible base URL':'兼容 OpenAI 的 API 地址','Model name':'模型名称',"Your provider's tool-capable model":'填写支持工具调用的模型名称',
+  'Suggested models are editable. Availability depends on your account and region.':'建议模型可以修改，实际可用性取决于账户和区域。','Official documentation':'官方说明文档','Custom endpoint: enter a compatible URL and tool-capable model.':'自定义接口：填写兼容地址和支持工具调用的模型。',
   'API key':'API 密钥','Leave blank to keep the saved key':'留空则保留已保存的密钥',
   'Sending a question shares the current evidence with this provider. Preparing a paper sends its extractable text page by page.':'发送问题会将当前证据交给所配置的模型服务。预读论文会逐页发送可提取的文本。',
   'Cancel':'取消','Save settings':'保存设置','Source evidence':'原文证据','Close':'关闭',
@@ -41,9 +42,9 @@ const zh = {
   'Invalid local host.':'本地服务地址无效。','Cross-site requests are not allowed.':'不允许跨站请求。','Reload this local page to reconnect.':'请刷新此页面以重新连接。','JSON required.':'请求必须使用 JSON 格式。','Not found.':'未找到请求的内容。',
   'Request is too large.':'请求内容过长。','Demo mode does not use or save API credentials.':'演示模式不使用或保存 API 密钥。','Pause active reading tasks before changing providers.':'请先暂停正在运行的阅读任务，再修改模型服务。',
   'Enter a model name and a valid API key.':'请输入模型名称和有效的 API 密钥。','Enter a title, author or keyword (up to 200 characters).':'请输入标题、作者或关键词（最多 200 个字符）。','Configure your API key in Settings first.':'请先在“设置”中配置 API 密钥。',
-  'Pause the reading task before editing a card.':'请先暂停阅读任务，再编辑卡片。','Invalid card.':'卡片内容无效。','Use an eight-character Zotero item key.':'请使用 8 位 Zotero 条目编号。','This prototype only permits selected read tools.':'此探索版仅允许指定的读取工具。',
+  'Pause the reading task before editing a card.':'请先暂停阅读任务，再编辑卡片。','Invalid card.':'卡片内容无效。','Use an eight-character Zotero item key.':'请使用 8 位 Zotero 条目编号。','This prototype only permits selected read tools.':'此探索版仅允许指定的读取工具。','Choose a supported provider template or Custom.':'请选择受支持的模型服务模板或“自定义”。',
   'Invalid page number.':'页码无效。','Upstream returned no page text.':'Zotero 工具未返回页面文本。','Use an API base URL without credentials or query parameters.':'API 地址不能包含登录凭据或查询参数。','API endpoints require HTTPS (local testing may use HTTP).':'API 地址需要使用 HTTPS（本地测试可使用 HTTP）。',
-  'Set an API base URL, model and API key first.':'请先设置 API 地址、模型和密钥。','The API returned no assistant message.':'API 未返回模型回答。','The model did not return a valid research answer. Try again with a tool-capable model.':'模型未返回有效的研究回答，请使用支持工具调用的模型重试。',
+  'Set an API base URL, model and API key first.':'请先设置 API 地址、模型和密钥。','The API returned no assistant message.':'API 未返回模型回答。','The model did not return a valid research answer. Check that the selected model supports tool calling.':'模型未返回有效的研究回答，请确认所选模型支持工具调用。','The model mixed its final answer with other tool requests. Please retry.':'模型同时提交最终回答和其他工具请求，请重试。',
   'The model response is missing the answer or study record.':'模型返回内容缺少回答或阅读记录。','The model exceeded the response size limit.':'模型回答超过了长度限制。','Invalid note proposal.':'笔记建议格式无效。','Demo mode only contains DEMO0001.':'演示模式仅包含 DEMO0001。','The demo has three pages.':'演示论文共有 3 页。',
   'The answer cited evidence that was not retrieved. Nothing was accepted.':'回答引用了未读取的证据，本次结果未保存。','The answer did not cite any retrieved evidence. Nothing was accepted.':'回答没有引用已读取的证据，本次结果未保存。','Wait for the current reading task or pause it.':'请等待当前阅读任务完成，或先暂停任务。',
   'Enter a question of up to 6000 characters.':'请输入问题（最多 6000 个字符）。','Invalid starting page.':'起始页码无效。','A task is already running for this paper.':'这篇论文已有任务正在运行。','Open a source page first.':'请先打开一页原文。',
@@ -66,7 +67,7 @@ const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
 while (walker.nextNode()) { const node = walker.currentNode; const text = node.nodeValue.trim(); if (Object.hasOwn(zh,text)) staticLabels.push({node,text}); }
 const placeholders = [...document.querySelectorAll('[placeholder]')].map(node => ({node,text:node.placeholder}));
 let lastNotice = '', lastNoticeError = false, evidenceSource;
-let token, paper, demo, polling, renderedMessages = '', renderedCards = '';
+let token, paper, demo, polling, renderedMessages = '', renderedCards = '', providerPresets = {};
 function notice(message, error = false) { lastNotice = message; lastNoticeError = error; $('notice').textContent = tr(message); $('notice').classList.toggle('error', error); }
 function evidenceTitle(source) { return language === 'zh-CN' ? `原文 · PDF 第 ${source.page} 页${source.truncated ? ' · 节选' : ''}` : `Source · physical page ${source.page}${source.truncated ? ' · excerpt' : ''}`; }
 function applyLanguage() {
@@ -79,6 +80,7 @@ function applyLanguage() {
   for (const el of document.querySelectorAll('[data-read-key]')) el.textContent = `${language === 'zh-CN' ? '阅读' : 'Read'} ${el.dataset.readKey}`;
   if (evidenceSource) $('evidence-title').textContent = evidenceTitle(evidenceSource);
   renderedMessages = ''; renderedCards = ''; render();
+  if (Object.keys(providerPresets).length) renderProviderPreset(false);
   for (const draft of drafts) { const el = [...document.querySelectorAll('.card')].find(node => node.dataset.id === draft.id); if (el) { el.querySelector('input').value = draft.title; el.querySelector('textarea').value = draft.body; } }
   if (lastNotice) notice(lastNotice,lastNoticeError);
 }
@@ -172,8 +174,23 @@ $('use-selection').onclick = action(() => {
 });
 function tab(cards) { $('cards-pane').hidden = !cards; $('chat-pane').hidden = cards; $('cards-tab').classList.toggle('active',cards); $('chat-tab').classList.toggle('active',!cards); }
 $('chat-tab').onclick = () => tab(false); $('cards-tab').onclick = () => tab(true);
-$('settings').onclick = action(async () => { if (demo) throw new Error('Demo mode uses a scripted provider. Open API mode on port 43140 to configure a real model.'); const value = await api('settings'); $('base-url').value = value.baseUrl; $('model-name').value = value.model; $('api-key').value = ''; $('key-state').dataset.message = value.hasKey ? 'A key is already saved.' : 'No API key saved yet.'; $('key-state').textContent = tr($('key-state').dataset.message); $('settings-dialog').showModal(); });
-$('settings-form').onsubmit = action(async () => { await api('settings',{ baseUrl:$('base-url').value, model:$('model-name').value, apiKey:$('api-key').value }); $('api-key').value = ''; $('settings-dialog').close(); notice('API settings saved locally.'); });
+function renderProviderPreset(fill) {
+  const preset = providerPresets[$('provider-name').value]; if (!preset) return;
+  $('model-options').replaceChildren(...preset.models.map(model => Object.assign(document.createElement('option'),{value:model})));
+  if (fill) { $('base-url').value = preset.baseUrl; $('model-name').value = preset.models[0] || ''; }
+  $('provider-help').replaceChildren(document.createTextNode(preset.docs ? `${preset.label} · ` : tr('Custom endpoint: enter a compatible URL and tool-capable model.')));
+  if (preset.docs) { const link = document.createElement('a'); link.href = preset.docs; link.target = '_blank'; link.rel = 'noreferrer'; link.textContent = tr('Official documentation'); $('provider-help').append(link); }
+}
+$('provider-name').onchange = () => renderProviderPreset(true);
+$('settings').onclick = action(async () => {
+  if (demo) throw new Error('Demo mode uses a scripted provider. Open API mode on port 43140 to configure a real model.');
+  const value = await api('settings'); providerPresets = value.presets;
+  $('provider-name').replaceChildren(...Object.entries(providerPresets).map(([id,preset]) => Object.assign(document.createElement('option'),{value:id,textContent:preset.label})));
+  $('provider-name').value = value.provider; renderProviderPreset(false);
+  $('base-url').value = value.baseUrl; $('model-name').value = value.model; $('api-key').value = '';
+  $('key-state').dataset.message = value.hasKey ? 'A key is already saved.' : 'No API key saved yet.'; $('key-state').textContent = tr($('key-state').dataset.message); $('settings-dialog').showModal();
+});
+$('settings-form').onsubmit = action(async () => { await api('settings',{ provider:$('provider-name').value, baseUrl:$('base-url').value, model:$('model-name').value, apiKey:$('api-key').value }); $('api-key').value = ''; $('settings-dialog').close(); notice('API settings saved locally.'); });
 $('close-settings').onclick = () => $('settings-dialog').close(); $('close-evidence').onclick = () => $('evidence-dialog').close();
 applyLanguage();
 action(async () => { const boot = await (await fetch('/api/bootstrap')).json(); token = boot.token; demo = boot.demo; $('mode').textContent = tr(demo ? 'SCRIPTED DEMO' : 'LOCAL API MODE'); await recent(); notice(demo ? 'Scripted demo: open DEMO0001. No API key needed.' : 'Connect Zotero, then configure your model in Settings.'); if (demo) { $('key').value = 'DEMO0001'; await open('DEMO0001'); } })();

@@ -8,15 +8,16 @@ import { spawn } from 'node:child_process';
 import { Store, publicPaper } from './lib/store.mjs';
 import { ZoteroBridge, itemKey } from './lib/zotero.mjs';
 import { DemoBridge, DemoProvider } from './lib/demo.mjs';
-import { Provider, baseURL } from './lib/provider.mjs';
+import { Provider, PROVIDER_PRESETS, baseURL, inferProvider } from './lib/provider.mjs';
 import { Harness } from './lib/harness.mjs';
 
 const ROOT = fileURLToPath(new URL('.', import.meta.url));
 export async function createApp({ demo = false, root, port = 43140 } = {}) {
   root ||= process.env.ZR_DATA_DIR || path.join(process.env.LOCALAPPDATA || path.join(os.homedir(), '.local/share'), 'ZoteroResearch', demo ? 'demo' : 'live');
   const store = new Store(root), bridge = demo ? new DemoBridge() : new ZoteroBridge();
-  const defaults = { baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai', model: '', apiKey: '' };
+  const defaults = { provider: 'gemini', baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai', model: '', apiKey: '' };
   let settings = await store.read('settings.json', defaults);
+  settings.provider = PROVIDER_PRESETS[settings.provider] ? settings.provider : inferProvider(settings.baseUrl);
   const harness = new Harness({ store, bridge, provider: demo ? new DemoProvider() : new Provider(settings) });
   const token = randomBytes(24).toString('hex');
   const files = new Map([['/', ['index.html', 'text/html']], ['/app.js',['app.js','text/javascript']], ['/style.css',['style.css','text/css']]]);
@@ -50,11 +51,13 @@ export async function createApp({ demo = false, root, port = 43140 } = {}) {
         body = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
       }
       const route = `${request.method} ${url.pathname}`;
-      if (route === 'GET /api/settings') return json(200, { baseUrl: settings.baseUrl, model: settings.model, hasKey: Boolean(settings.apiKey) });
+      if (route === 'GET /api/settings') return json(200, { provider: settings.provider, baseUrl: settings.baseUrl, model: settings.model, hasKey: Boolean(settings.apiKey), presets: PROVIDER_PRESETS });
       if (route === 'POST /api/settings') {
         if (demo) throw new Error('Demo mode does not use or save API credentials.');
         if (harness.active.size) throw new Error('Pause active reading tasks before changing providers.');
-        const next = { baseUrl: baseURL(body.baseUrl), model: String(body.model || '').trim().slice(0,200), apiKey: body.clearKey ? '' : String(body.apiKey || settings.apiKey || '') };
+        const provider = String(body.provider || inferProvider(body.baseUrl));
+        if (!PROVIDER_PRESETS[provider]) throw new Error('Choose a supported provider template or Custom.');
+        const next = { provider, baseUrl: baseURL(body.baseUrl), model: String(body.model || '').trim().slice(0,200), apiKey: body.clearKey ? '' : String(body.apiKey || settings.apiKey || '') };
         if (!next.model || next.apiKey.length > 2000) throw new Error('Enter a model name and a valid API key.');
         await store.write('settings.json', next); settings = next; harness.provider = new Provider(next);
         return json(200, { saved: true });

@@ -6,6 +6,8 @@ This project is separate from Inkleaf, with its own configuration, storage and l
 
 See [architecture and reuse decision](docs/ARCHITECTURE_AND_REUSE.md) and [exploration results](docs/API_EXPLORATION.md).
 
+Model setup includes editable templates for OpenAI, Claude, DeepSeek, Gemini, Qwen, GLM and OpenRouter. See the [provider compatibility notes](docs/PROVIDER_TEMPLATES.md) for endpoints, suggested tool-capable models and documented limitations.
+
 ## 中文快速开始
 
 1. 新电脑先安装 Node.js 22+、uv 和 Zotero，然后运行 `setup-windows.cmd`。
@@ -22,7 +24,7 @@ Requirements: Node.js 22 or newer, [uv](https://docs.astral.sh/uv/), and Zotero 
 
 1. On a new computer, run `setup-windows.cmd` once. Dependencies are already installed on the development computer.
 2. Run `start-windows.cmd`, or `npm start`.
-3. Open **Settings**, enter your OpenAI-compatible base URL, a tool-capable model name and API key.
+3. Open **Settings**, choose a provider template, confirm its editable endpoint and model, then enter the matching API key.
 4. Search for a Zotero paper by title or author, then select **Read <item key>**. You can also paste an eight-character item key.
 5. Read source pages and ask a question. Click page citations to inspect the exact extracted evidence used by the answer.
 6. Review **Note cards**, edit a draft and choose **Accept / save edits**. Cards are currently saved locally, not published to Zotero.
