@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import { Store, publicPaper } from '../lib/store.mjs';
@@ -8,6 +8,7 @@ import { Harness, evidenceFor, validateCitations } from '../lib/harness.mjs';
 import { DemoBridge, DemoProvider } from '../lib/demo.mjs';
 import { Provider, baseURL, inferProvider, providerRequest } from '../lib/provider.mjs';
 import { createApp } from '../server.mjs';
+import { parseCollections, parseItems } from '../lib/zotero.mjs';
 import http from 'node:http';
 
 async function fixture(t, provider = new DemoProvider()) {
@@ -34,6 +35,18 @@ test('real tool loop persists cited answers, separate study memory and editable 
   assert.equal(paper.cards[0].status,'draft'); assert.ok(paper.memory);
   assert.equal(publicPaper(paper).memory,undefined); assert.equal(publicPaper(paper).revisions,undefined);
   assert.equal((await new Store(root).paper('DEMO0001')).memory,paper.memory);
+});
+test('store serializes repeated Windows-safe replacements without orphan temp files',async t=>{
+  const root=await mkdtemp(path.join(os.tmpdir(),'zr-store-'));t.after(()=>rm(root,{recursive:true,force:true}));const store=new Store(root);
+  await Promise.all(Array.from({length:20},(_,index)=>store.write('papers/TEST0001.json',{index,text:'x'.repeat(index)})));
+  const saved=await store.read('papers/TEST0001.json',null);assert.equal(typeof saved.index,'number');
+  assert.deepEqual((await readdir(path.join(root,'papers'))).filter(name=>name.endsWith('.tmp')),[]);
+});
+test('Zotero markdown is projected into collection and item rows',()=>{
+  const collections=parseCollections('# Zotero Collections\n\n- **Work** (Key: ABCD1234)\n  - **Methods** (Key: EFGH5678)');
+  assert.deepEqual(collections,[{key:'ABCD1234',name:'Work',depth:0,parentKey:null},{key:'EFGH5678',name:'Methods',depth:1,parentKey:'ABCD1234'}]);
+  const items=parseItems('# Items\n\n## 1. Paper title\n**Type:** journalArticle\n**Item Key:** ZXCV1234\n**Date:** 2026\n**Authors:** Doe, Jane\n**Attachments:** PDF, 1 attachment\n');
+  assert.equal(items[0].title,'Paper title');assert.equal(items[0].hasPdf,true);assert.equal(items[0].authors,'Doe, Jane');
 });
 test('fabricated citations and tools outside the scope are rejected without accepting notes',async t=>{
   const {store,harness}=await fixture(t,{async complete(){return {tokens:1,message:{content:JSON.stringify({answer:'A made-up claim [E0000000000000000]',memory:'bad',card:null})}};}});
@@ -88,6 +101,8 @@ test('HTTP endpoints hide secrets and private study records and protect mutation
   const post=(route,body)=>fetch(`${url}/api/${route}`,{method:'POST',headers:{'Content-Type':'application/json','X-Research-Token':boot.token},body:JSON.stringify(body)});
   assert.equal((await fetch(`${url}/api/open`,{method:'POST',body:'{}'})).status,403);
   const opened=await (await post('open',{key:'DEMO0001',page:1})).json();assert.equal(opened.totalPages,3);assert.equal(opened.memory,undefined);
+  const library=await fetch(`${url}/api/library`,{headers:{'X-Research-Token':boot.token}}).then(r=>r.json());assert.equal(library.collections[0].key,'DEMOCLL1');assert.equal(library.items[0].key,'DEMO0001');
+  const search=await (await post('search',{query:'retrieval'})).json();assert.equal(search.items[0].key,'DEMO0001');
   await post('run',{key:'DEMO0001',page:1,question:'Evidence?'});const paper=await finished(app.harness,app.store);
   const publicState=await fetch(`${url}/api/paper?key=DEMO0001`,{headers:{'X-Research-Token':boot.token}}).then(r=>r.json());
   assert.equal(publicState.memory,undefined);assert.equal(publicState.messages.length,1);

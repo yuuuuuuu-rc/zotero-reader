@@ -1,0 +1,17 @@
+main{grid-template-columns:310px minmax(320px,1fr) minmax(340px,440px)}
+.library-heading{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.library-heading h2{margin-right:auto}
+#collections{border:1px solid var(--line);border-radius:8px;background:#fff;max-height:240px;overflow:auto;margin:16px 0;padding:6px}
+#collections button{display:block;width:100%;border:0;border-radius:5px;text-align:left;padding:6px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#collections button.active{background:#dfece5;color:#174f47;font-weight:700}
+.item-list{max-height:340px;overflow:auto;border-top:1px solid var(--line)}
+.item-row{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);border-radius:0;padding:10px 5px;background:transparent}
+.item-title{display:block;font-weight:650;line-height:1.3}
+.item-meta{display:block;color:var(--muted);font-size:11px;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pdf-mark{color:var(--green);font-weight:750}
+#more-items{width:100%;margin-top:8px}
+details{margin:18px 0;color:var(--muted)}
+details summary{cursor:pointer;font-size:12px;font-weight:650}
+details form{margin-top:8px;color:var(--ink)}
+@media(max-width:1050px){main{grid-template-columns:240px 1fr}}
+@media(max-width:640px){main{display:block}.item-list{max-height:420px}}

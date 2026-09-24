@@ -13,7 +13,7 @@ Model setup includes editable templates for OpenAI, Claude, DeepSeek, Gemini, Qw
 1. 新电脑先安装 Node.js 22+、uv 和 Zotero，然后运行 `setup-windows.cmd`。
 2. 双击 `launch-windows.vbs` 启动本地网页；也可以右键为它创建桌面快捷方式。开发电脑已创建 **Zotero Reader** 桌面快捷方式。
 3. 页面顶部选择 **简体中文** 或 **English**，浏览器会记住选择。
-4. 在“设置”中填写 API 地址、支持工具调用的模型名称和密钥。搜索 Zotero 论文，点击“阅读”，即可查看原文、提问和编辑笔记卡片。
+4. 在左栏直接浏览 Zotero 的分类树和条目，或在当前资料库中搜索；点击论文即可查看原文。需要 AI 时，再在“设置”中填写 API 地址、支持工具调用的模型名称和密钥。
 5. “预读论文”会逐页调用模型并产生 API 费用；只查看原文不会调用模型。无需密钥体验可运行 `demo-windows.cmd`。
 
 论文及笔记不会随代码上传：个人阅读记录保存在 `%LOCALAPPDATA%\ZoteroResearch\live`。当前版本只读取 Zotero，笔记保存在本地，尚不写回 Zotero。
@@ -25,7 +25,7 @@ Requirements: Node.js 22 or newer, [uv](https://docs.astral.sh/uv/), and Zotero 
 1. On a new computer, run `setup-windows.cmd` once. Dependencies are already installed on the development computer.
 2. Run `start-windows.cmd`, or `npm start`.
 3. Open **Settings**, choose a provider template, confirm its editable endpoint and model, then enter the matching API key.
-4. Search for a Zotero paper by title or author, then select **Read <item key>**. You can also paste an eight-character item key.
+4. Browse the Zotero collection tree and item list, or search by title or author. Select an item to read it directly. You can still open an eight-character item key from the collapsed advanced control.
 5. Read source pages and ask a question. Click page citations to inspect the exact extracted evidence used by the answer.
 6. Review **Note cards**, edit a draft and choose **Accept / save edits**. Cards are currently saved locally, not published to Zotero.
 
@@ -45,10 +45,10 @@ Run `demo-windows.cmd` or `npm run demo`, then open <http://127.0.0.1:43141>. A 
 
 ## What the harness currently enforces
 
-- Only three upstream MCP read tools are available to the application. The model gets one tool: read a numbered page of the selected paper.
+- The application allowlists Zotero collection browsing, collection items, recent items, search, item metadata and PDF page reads. The model itself gets only a numbered-page reader scoped to the selected paper.
 - Maximum five model steps per question, three page calls per step, request timeout and bounded transient-error retries.
 - Evidence IDs derived from the returned page text; invented or missing IDs reject the response. This validates provenance, not the truth of an interpretation.
-- Atomic local saves, per-paper task exclusion, cancellation checks and page-by-page preparation checkpoints.
+- Serialized local saves, retry/fallback handling for Windows file locks, per-paper task exclusion, cancellation checks and page-by-page preparation checkpoints.
 - Separate reader cards and private AI study records with revision history; private records are omitted from browser API responses.
 
 ## Local data

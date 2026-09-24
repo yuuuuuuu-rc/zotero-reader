@@ -20,12 +20,17 @@ export async function createApp({ demo = false, root, port = 43140 } = {}) {
   settings.provider = PROVIDER_PRESETS[settings.provider] ? settings.provider : inferProvider(settings.baseUrl);
   const harness = new Harness({ store, bridge, provider: demo ? new DemoProvider() : new Provider(settings) });
   const token = randomBytes(24).toString('hex');
-  const files = new Map([['/', ['index.html', 'text/html']], ['/app.js',['app.js','text/javascript']], ['/style.css',['style.css','text/css']]]);
+  const files = new Map([['/', ['index.html', 'text/html']], ['/app.js',['app.js','text/javascript']], ['/style.css',['style.css','text/css']], ['/library.css',['library.css','text/css']]]);
   // Interrupted jobs remain resumable, never run automatically after a restart.
   for (const name of await readdir(path.join(root, 'papers')).catch(() => [])) {
     if (!/^[A-Z0-9]{8}\.json$/.test(name)) continue;
     const data = await store.paper(name.slice(0,8));
     if (data.job?.status === 'running') { data.job.status = 'paused'; data.job.step = 'Server restarted; resume preparation or retry your question.'; await store.savePaper(data); }
+    else if (data.job?.status === 'failed' && /(?:EPERM|EACCES|EBUSY).*rename.*\.tmp/i.test(data.job.step || '')) {
+      data.job.status = 'paused';
+      data.job.step = 'Recovered from a Windows file lock; resume preparation from the saved checkpoint.';
+      await store.savePaper(data);
+    }
   }
   const server = http.createServer(async (request, response) => {
     const json = (status, value) => { response.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' }); response.end(JSON.stringify(value)); };
@@ -63,9 +68,11 @@ export async function createApp({ demo = false, root, port = 43140 } = {}) {
         return json(200, { saved: true });
       }
       if (route === 'POST /api/connect') return json(200, { tools: await bridge.connect() });
+      if (route === 'GET /api/library') return json(200, await bridge.library());
+      if (route === 'GET /api/collection') return json(200, await bridge.collection(itemKey(url.searchParams.get('key')), Number(url.searchParams.get('offset') || 0)));
       if (route === 'POST /api/search') {
         if (typeof body.query !== 'string' || !body.query.trim() || body.query.length > 200) throw new Error('Enter a title, author or keyword (up to 200 characters).');
-        return json(200, { text: await bridge.search(body.query.trim()) });
+        return json(200, await bridge.search(body.query.trim()));
       }
       if (route === 'GET /api/papers') {
         const list = [];

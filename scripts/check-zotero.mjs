@@ -4,8 +4,8 @@ try {
   console.log('MCP read tools:', await bridge.connect());
   console.log('MCP connection succeeded; no library writes were requested.');
   if (process.argv[2] === '--search') {
-    const text = await bridge.search(process.argv[3] || 'learning');
-    const keys = [...text.matchAll(/\*\*Item Key:\*\*\s*([A-Z0-9]{8})/g)].map(match => match[1]);
+    const { items } = await bridge.search(process.argv[3] || 'learning');
+    const keys = items.map(item => item.key);
     console.log(`Search completed: ${keys.length} item keys returned.`);
     if (keys.length) {
       const data = await bridge.metadata(keys[0]);

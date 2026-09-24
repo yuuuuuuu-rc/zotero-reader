@@ -2,7 +2,7 @@ const $ = id => document.getElementById(id);
 const zh = {
   'RESEARCH COMPANION':'论文阅读助手','API preview':'API 探索版','Language':'界面语言',
   'Connect Zotero':'连接 Zotero','Settings':'设置','Connecting to the local reading workspace…':'正在连接本地阅读工作区…',
-  'Your papers':'我的论文','Find a title or author':'搜索标题或作者','Search Zotero':'搜索 Zotero','Search':'搜索',
+  'Your papers':'我的论文','Find a title or author':'搜索标题或作者','Search Zotero':'搜索 Zotero','Search':'搜索','Zotero library':'Zotero 资料库','Refresh':'刷新','Search this library':'搜索当前资料库','Title, author or year':'标题、作者或年份','Loading collections…':'正在载入分类…','Recently added':'最近添加','Load more':'载入更多','Reading history':'阅读记录','My Library':'我的资料库','No items in this view.':'当前视图没有条目。',
   'Open by item key':'按条目编号打开','Eight-character Zotero key':'8 位 Zotero 条目编号','Open':'打开','Recent papers':'最近阅读',
   'Source text is read through zotero-mcp. Opening a page does not call the model.':'原文通过 zotero-mcp 读取。打开页面不会调用 AI。',
   'SOURCE EVIDENCE':'原文证据','Start with a question worth reading for.':'带着问题，开始阅读。',
@@ -29,6 +29,7 @@ const zh = {
   'Paper ready. Questions send retrieved evidence to your configured provider.':'论文已就绪。提问会将检索到的证据发送给所配置的模型服务。',
   'Searching Zotero…':'正在搜索 Zotero…','Search complete. Open a result or paste its item key.':'搜索完成。打开结果，或粘贴条目编号。',
   'Connecting to zotero-mcp…':'正在连接 zotero-mcp…','MCP connected. Search for a title to check your Zotero library connection.':'MCP 已连接。搜索论文标题即可检查文库连接。',
+  'MCP connected. Browse a collection or search your Zotero library.':'MCP 已连接。可以浏览分类或搜索 Zotero 资料库。','Loading Zotero collection…':'正在载入 Zotero 分类…','Zotero collection loaded.':'Zotero 分类已载入。','Search complete. Select an item to read.':'搜索完成。请选择一个条目阅读。',
   'Open a paper first.':'请先打开一篇论文。','Reading source page…':'正在读取原文页面…','Source page loaded.':'原文页面已加载。',
   'Pause requested. Completed preparation pages are kept.':'已请求暂停，已完成的预读页面会保留。','Select text in the source passage first.':'请先在原文区域选中文字。',
   'Demo mode uses a scripted provider. Open API mode on port 43140 to configure a real model.':'演示模式使用模拟回答。请打开 43140 端口的 API 版配置真实模型。',
@@ -36,6 +37,7 @@ const zh = {
   'Scripted demo: open DEMO0001. No API key needed.':'模拟演示：打开 DEMO0001 即可体验，无需 API 密钥。','Connect Zotero, then configure your model in Settings.':'连接 Zotero，然后在“设置”中配置模型。',
   'running':'进行中','complete':'已完成','failed':'失败','paused':'已暂停','Starting':'正在开始','Paused':'已暂停','Paused by reader.':'已由读者暂停。',
   'Available text prepared':'可用文本预读完成','Answer saved':'回答已保存','Server restarted; resume preparation or retry your question.':'服务已重启，请继续预读或重新提问。',
+  'Recovered from a Windows file lock; resume preparation from the saved checkpoint.':'已从 Windows 文件占用中恢复，可从保存的断点继续预读。',
   'Task time limit reached. Resume preparation or retry the question.':'任务已达到时间上限，请继续预读或重新提问。',
   'Server shutting down.':'服务正在关闭。','Source text changed. Earlier answers and cards may refer to an older version; prepare again.':'原文已变化。先前的回答和卡片可能引用旧版本，请重新预读。',
   'Request failed.':'请求失败。','Failed to fetch':'连接失败，请检查本地服务是否正在运行。','fetch failed':'连接失败，请检查服务地址和网络。',
@@ -68,6 +70,7 @@ while (walker.nextNode()) { const node = walker.currentNode; const text = node.n
 const placeholders = [...document.querySelectorAll('[placeholder]')].map(node => ({node,text:node.placeholder}));
 let lastNotice = '', lastNoticeError = false, evidenceSource;
 let token, paper, demo, polling, renderedMessages = '', renderedCards = '', providerPresets = {};
+let libraryCollections = [], libraryItems = [], libraryScopeKey = null, libraryScopeName = 'Recently added', libraryNextOffset = null;
 function notice(message, error = false) { lastNotice = message; lastNoticeError = error; $('notice').textContent = tr(message); $('notice').classList.toggle('error', error); }
 function evidenceTitle(source) { return language === 'zh-CN' ? `原文 · PDF 第 ${source.page} 页${source.truncated ? ' · 节选' : ''}` : `Source · physical page ${source.page}${source.truncated ? ' · excerpt' : ''}`; }
 function applyLanguage() {
@@ -80,6 +83,7 @@ function applyLanguage() {
   for (const el of document.querySelectorAll('[data-read-key]')) el.textContent = `${language === 'zh-CN' ? '阅读' : 'Read'} ${el.dataset.readKey}`;
   if (evidenceSource) $('evidence-title').textContent = evidenceTitle(evidenceSource);
   renderedMessages = ''; renderedCards = ''; render();
+  if (libraryItems.length || libraryCollections.length) { renderCollections(); renderLibraryItems(); }
   if (Object.keys(providerPresets).length) renderProviderPreset(false);
   for (const draft of drafts) { const el = [...document.querySelectorAll('.card')].find(node => node.dataset.id === draft.id); if (el) { el.querySelector('input').value = draft.title; el.querySelector('textarea').value = draft.body; } }
   if (lastNotice) notice(lastNotice,lastNoticeError);
@@ -137,6 +141,39 @@ function render() {
   }
 }
 async function recent() { const items = await api('papers'); $('recent').replaceChildren(...items.map(item => button(item.title, () => open(item.key, true)))); }
+function renderLibraryItems() {
+  $('item-scope').textContent = libraryScopeName === 'Recently added' ? tr(libraryScopeName) : libraryScopeName;
+  $('results').replaceChildren();
+  if (!libraryItems.length) { const empty = document.createElement('p'); empty.className = 'muted'; empty.textContent = tr('No items in this view.'); $('results').append(empty); }
+  for (const item of libraryItems) {
+    const row = document.createElement('button'); row.className = 'item-row'; row.onclick = action(() => open(item.key));
+    const title = document.createElement('span'); title.className = 'item-title'; title.textContent = item.title || item.key;
+    const meta = document.createElement('span'); meta.className = 'item-meta';
+    const year = item.date?.match(/\b(?:19|20)\d{2}\b/)?.[0] || item.date || '';
+    meta.textContent = [item.hasPdf ? 'PDF' : '', item.authors, year, item.type].filter(Boolean).join(' · ');
+    if (item.hasPdf) meta.classList.add('pdf-mark'); row.append(title,meta); $('results').append(row);
+  }
+  $('more-items').hidden = libraryNextOffset == null;
+}
+function renderCollections() {
+  $('collections').replaceChildren();
+  const root = button('My Library', () => loadLibrary()); root.classList.toggle('active',!libraryScopeKey); $('collections').append(root);
+  for (const collection of libraryCollections) {
+    const entry = button(collection.name, () => loadCollection(collection)); entry.style.paddingLeft = `${10 + collection.depth * 16}px`;
+    entry.title = collection.name; entry.classList.toggle('active',libraryScopeKey === collection.key); $('collections').append(entry);
+  }
+}
+async function loadLibrary() {
+  notice('Connecting to zotero-mcp…'); const data = await api('library');
+  libraryCollections = data.collections; libraryItems = data.items; libraryScopeKey = null; libraryScopeName = 'Recently added'; libraryNextOffset = null;
+  renderCollections(); renderLibraryItems(); notice('MCP connected. Browse a collection or search your Zotero library.');
+}
+async function loadCollection(collection, append = false) {
+  notice('Loading Zotero collection…'); const offset = append ? libraryNextOffset || 0 : 0;
+  const data = await api(`collection?key=${encodeURIComponent(collection.key)}&offset=${offset}`);
+  libraryItems = append ? [...libraryItems,...data.items] : data.items; libraryScopeKey = collection.key; libraryScopeName = collection.name; libraryNextOffset = data.nextOffset;
+  renderCollections(); renderLibraryItems(); notice('Zotero collection loaded.');
+}
 async function open(key, cached = false) {
   clearTimeout(polling); notice(cached ? 'Opening saved reading workspace…' : 'Reading through zotero-mcp…');
   paper = await api(cached ? `paper?key=${encodeURIComponent(key)}` : 'open', cached ? undefined : { key, page: 1 });
@@ -147,14 +184,14 @@ async function open(key, cached = false) {
 async function refresh() { if (!paper) return; paper = await api(`paper?key=${paper.key}`); render(); }
 function poll() { clearTimeout(polling); polling = setTimeout(action(async () => { await refresh(); if (paper.job?.status === 'running') poll(); }), 1000); }
 $('search-form').onsubmit = action(async () => {
-  notice('Searching Zotero…'); const result = await api('search', { query: $('query').value });
-  const pre = document.createElement('pre'); pre.textContent = result.text; $('results').replaceChildren(pre);
-  const keys = [...new Set([...result.text.matchAll(/(?:\*\*(?:Item )?Key:\*\*\s*`?|\bkey[: ]+`?)([A-Z0-9]{8})/gi)].map(m => m[1]))];
-  for (const key of keys) { const el = button(`${language === 'zh-CN' ? '阅读' : 'Read'} ${key}`, () => open(key)); el.dataset.readKey = key; $('results').append(el); }
-  notice('Search complete. Open a result or paste its item key.');
+  const query = $('query').value.trim(); if (!query) return loadLibrary();
+  notice('Searching Zotero…'); const result = await api('search', { query });
+  libraryItems = result.items; libraryScopeKey = 'search'; libraryScopeName = language === 'zh-CN' ? `搜索：${query}` : `Search: ${query}`; libraryNextOffset = null;
+  renderCollections(); renderLibraryItems(); notice('Search complete. Select an item to read.');
 });
 $('open-form').onsubmit = action(() => open($('key').value.trim().toUpperCase()));
-$('connect').onclick = action(async () => { notice('Connecting to zotero-mcp…'); await api('connect', {}); notice('MCP connected. Search for a title to check your Zotero library connection.'); });
+$('connect').onclick = action(loadLibrary); $('refresh-library').onclick = action(loadLibrary);
+$('more-items').onclick = action(async () => { const collection = libraryCollections.find(value => value.key === libraryScopeKey); if (collection && libraryNextOffset != null) await loadCollection(collection,true); });
 $('read-page').onclick = action(async () => { if (!paper) throw new Error('Open a paper first.'); notice('Reading source page…'); paper = await api('open', { key: paper.key, page: Number($('page').value) }); render(); notice('Source page loaded.'); });
 $('ask-form').onsubmit = action(async () => {
   if (!paper) throw new Error('Open a paper first.');
@@ -193,4 +230,4 @@ $('settings').onclick = action(async () => {
 $('settings-form').onsubmit = action(async () => { await api('settings',{ provider:$('provider-name').value, baseUrl:$('base-url').value, model:$('model-name').value, apiKey:$('api-key').value }); $('api-key').value = ''; $('settings-dialog').close(); notice('API settings saved locally.'); });
 $('close-settings').onclick = () => $('settings-dialog').close(); $('close-evidence').onclick = () => $('evidence-dialog').close();
 applyLanguage();
-action(async () => { const boot = await (await fetch('/api/bootstrap')).json(); token = boot.token; demo = boot.demo; $('mode').textContent = tr(demo ? 'SCRIPTED DEMO' : 'LOCAL API MODE'); await recent(); notice(demo ? 'Scripted demo: open DEMO0001. No API key needed.' : 'Connect Zotero, then configure your model in Settings.'); if (demo) { $('key').value = 'DEMO0001'; await open('DEMO0001'); } })();
+action(async () => { const boot = await (await fetch('/api/bootstrap')).json(); token = boot.token; demo = boot.demo; $('mode').textContent = tr(demo ? 'SCRIPTED DEMO' : 'LOCAL API MODE'); await recent(); await loadLibrary(); if (demo) { $('key').value = 'DEMO0001'; await open('DEMO0001'); } })();
