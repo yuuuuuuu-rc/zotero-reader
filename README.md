@@ -2,9 +2,19 @@
 
 Status: working API-route exploration, version 0.1.0. The user selected zotero-mcp as the foundation on 2026-09-23.
 
-This project is separate from Inkleaf. It will have its own repository, configuration, storage and launch entry. The user will supply the GitHub repository URL later; no remote has been configured and nothing has been published from this folder.
+This project is separate from Inkleaf, with its own configuration, storage and launch entry. Repository: [yuuuuuuu-rc/zotero-reader](https://github.com/yuuuuuuu-rc/zotero-reader).
 
 See [architecture and reuse decision](docs/ARCHITECTURE_AND_REUSE.md) and [exploration results](docs/API_EXPLORATION.md).
+
+## 中文快速开始
+
+1. 新电脑先安装 Node.js 22+、uv 和 Zotero，然后运行 `setup-windows.cmd`。
+2. 双击 `launch-windows.vbs` 启动本地网页；也可以右键为它创建桌面快捷方式。开发电脑已创建 **Zotero Reader** 桌面快捷方式。
+3. 页面顶部选择 **简体中文** 或 **English**，浏览器会记住选择。
+4. 在“设置”中填写 API 地址、支持工具调用的模型名称和密钥。搜索 Zotero 论文，点击“阅读”，即可查看原文、提问和编辑笔记卡片。
+5. “预读论文”会逐页调用模型并产生 API 费用；只查看原文不会调用模型。无需密钥体验可运行 `demo-windows.cmd`。
+
+论文及笔记不会随代码上传：个人阅读记录保存在 `%LOCALAPPDATA%\ZoteroResearch\live`。当前版本只读取 Zotero，笔记保存在本地，尚不写回 Zotero。
 
 ## Start on Windows
 
@@ -18,6 +28,10 @@ Requirements: Node.js 22 or newer, [uv](https://docs.astral.sh/uv/), and Zotero 
 6. Review **Note cards**, edit a draft and choose **Accept / save edits**. Cards are currently saved locally, not published to Zotero.
 
 API workspace: <http://127.0.0.1:43140>.
+
+Use the **简体中文 / English** selector in the top bar to change the interface language. The initial choice follows your browser language; a manual choice is saved in this browser. Switching languages preserves questions, unsaved card edits and provider settings. Paper text, existing answers and reader notes retain their original language. Model answers continue to follow the language of your question.
+
+For a quiet desktop launch, create a shortcut to `launch-windows.vbs`. It opens the existing API workspace when the service is already running, or starts it in the background first. `start-windows.cmd` remains available for troubleshooting with visible output.
 
 For Gemini, use `https://generativelanguage.googleapis.com/v1beta/openai` and a model name available to your account. No model is selected automatically. The provider must support Chat Completions function calling and return the requested JSON answer shape. Other provider-specific features are not implied by endpoint compatibility.
 

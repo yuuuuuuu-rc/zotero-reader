@@ -40,7 +40,7 @@ export async function createApp({ demo = false, root, port = 43140 } = {}) {
         response.writeHead(200, { 'Content-Type': `${type}; charset=utf-8`, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'" });
         return response.end(body);
       }
-      if (url.pathname === '/api/bootstrap' && request.method === 'GET') return json(200, { token, demo, dataDirectory: root, version: '0.1.0' });
+      if (url.pathname === '/api/bootstrap' && request.method === 'GET') return json(200, { app: 'zotero-research', token, demo, dataDirectory: root, version: '0.1.0' });
       if (request.headers['x-research-token'] !== token) return json(403, { error: 'Reload this local page to reconnect.' });
       let body = {};
       if (request.method === 'POST') {
