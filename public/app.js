@@ -6,9 +6,10 @@ const zh = {
   'Open by item key':'按条目编号打开','Eight-character Zotero key':'8 位 Zotero 条目编号','Open':'打开','Recent papers':'最近阅读',
   'Source text is read through zotero-mcp. Opening a page does not call the model.':'原文通过 zotero-mcp 读取。打开页面不会调用 AI。',
   'SOURCE EVIDENCE':'原文证据','Start with a question worth reading for.':'带着问题，开始阅读。',
-  'Choose a Zotero paper to read its extracted PDF text alongside the conversation.':'选择 Zotero 中的论文，一边查看提取的 PDF 原文，一边与 AI 讨论。',
-  'Page':'页码','Read page':'读取本页','Prepare paper':'预读论文','Pause':'暂停',
-  'The source passage appears here. You can select text and ask about it. Scans, equations and figures may need inspection in Zotero.':'原文将显示在这里。可以选中文字并提问。扫描页、公式和图表可能需要在 Zotero 中查看。',
+  'Choose a Zotero paper to read its PDF alongside the conversation.':'选择 Zotero 中的论文，一边阅读原始 PDF，一边与 AI 讨论。',
+  'Page':'页码','Extract this page':'提取本页','Prepare paper':'预读论文','Pause':'暂停','PDF reader':'PDF 阅读','AI text':'AI 文本','Fit width':'适合宽度','Find in PDF':'在 PDF 中查找','Find':'查找',
+  'The extracted text appears here for AI evidence. Open a PDF item to read the original pages, search and zoom.':'这里显示供 AI 引用的提取文本。打开 PDF 条目后可阅读原始页面、搜索和缩放。',
+  'Original PDF ready':'原始 PDF 已载入','No local PDF; showing extracted text':'没有本地 PDF，显示提取文本','Local PDF text layer':'本地 PDF 文字层','Zotero extraction fallback':'Zotero 提取回退',
   'Use selected passage in my question':'将选中文字加入问题','Discussion':'讨论','Note cards':'笔记卡片',
   'Read, question, verify.':'阅读、追问、核实。',
   'Ask what a claim means, what evidence supports it, or where its limits are. Answers link to the pages actually read.':'询问论点的含义、支持它的证据或它的局限。回答会链接到实际读取的原文页面。',
@@ -30,7 +31,7 @@ const zh = {
   'Searching Zotero…':'正在搜索 Zotero…','Search complete. Open a result or paste its item key.':'搜索完成。打开结果，或粘贴条目编号。',
   'Connecting to zotero-mcp…':'正在连接 zotero-mcp…','MCP connected. Search for a title to check your Zotero library connection.':'MCP 已连接。搜索论文标题即可检查文库连接。',
   'MCP connected. Browse a collection or search your Zotero library.':'MCP 已连接。可以浏览分类或搜索 Zotero 资料库。','Loading Zotero collection…':'正在载入 Zotero 分类…','Zotero collection loaded.':'Zotero 分类已载入。','Search complete. Select an item to read.':'搜索完成。请选择一个条目阅读。',
-  'Open a paper first.':'请先打开一篇论文。','Reading source page…':'正在读取原文页面…','Source page loaded.':'原文页面已加载。',
+  'Open a paper first.':'请先打开一篇论文。','Reading source page…':'正在提取 PDF 文字层…','Source page loaded.':'本页文字已提取，可供 AI 引用。',
   'Pause requested. Completed preparation pages are kept.':'已请求暂停，已完成的预读页面会保留。','Select text in the source passage first.':'请先在原文区域选中文字。',
   'Demo mode uses a scripted provider. Open API mode on port 43140 to configure a real model.':'演示模式使用模拟回答。请打开 43140 端口的 API 版配置真实模型。',
   'A key is already saved.':'已保存 API 密钥。','No API key saved yet.':'尚未保存 API 密钥。','API settings saved locally.':'API 设置已保存在本地。',
@@ -45,7 +46,7 @@ const zh = {
   'Request is too large.':'请求内容过长。','Demo mode does not use or save API credentials.':'演示模式不使用或保存 API 密钥。','Pause active reading tasks before changing providers.':'请先暂停正在运行的阅读任务，再修改模型服务。',
   'Enter a model name and a valid API key.':'请输入模型名称和有效的 API 密钥。','Enter a title, author or keyword (up to 200 characters).':'请输入标题、作者或关键词（最多 200 个字符）。','Configure your API key in Settings first.':'请先在“设置”中配置 API 密钥。',
   'Pause the reading task before editing a card.':'请先暂停阅读任务，再编辑卡片。','Invalid card.':'卡片内容无效。','Use an eight-character Zotero item key.':'请使用 8 位 Zotero 条目编号。','This prototype only permits selected read tools.':'此探索版仅允许指定的读取工具。','Choose a supported provider template or Custom.':'请选择受支持的模型服务模板或“自定义”。',
-  'Invalid page number.':'页码无效。','Upstream returned no page text.':'Zotero 工具未返回页面文本。','Use an API base URL without credentials or query parameters.':'API 地址不能包含登录凭据或查询参数。','API endpoints require HTTPS (local testing may use HTTP).':'API 地址需要使用 HTTPS（本地测试可使用 HTTP）。',
+  'Invalid page number.':'页码无效。','Upstream returned no page text.':'Zotero 工具未返回页面文本。','This PDF page has no extractable text. It may be a scan and need OCR.':'这个 PDF 页面没有可提取文字，可能是扫描页，需要 OCR。','Use an API base URL without credentials or query parameters.':'API 地址不能包含登录凭据或查询参数。','API endpoints require HTTPS (local testing may use HTTP).':'API 地址需要使用 HTTPS（本地测试可使用 HTTP）。',
   'Set an API base URL, model and API key first.':'请先设置 API 地址、模型和密钥。','The API returned no assistant message.':'API 未返回模型回答。','The model did not return a valid research answer. Check that the selected model supports tool calling.':'模型未返回有效的研究回答，请确认所选模型支持工具调用。','The model mixed its final answer with other tool requests. Please retry.':'模型同时提交最终回答和其他工具请求，请重试。',
   'The model response is missing the answer or study record.':'模型返回内容缺少回答或阅读记录。','The model exceeded the response size limit.':'模型回答超过了长度限制。','Invalid note proposal.':'笔记建议格式无效。','Demo mode only contains DEMO0001.':'演示模式仅包含 DEMO0001。','The demo has three pages.':'演示论文共有 3 页。',
   'The answer cited evidence that was not retrieved. Nothing was accepted.':'回答引用了未读取的证据，本次结果未保存。','The answer did not cite any retrieved evidence. Nothing was accepted.':'回答没有引用已读取的证据，本次结果未保存。','Wait for the current reading task or pause it.':'请等待当前阅读任务完成，或先暂停任务。',
@@ -69,7 +70,7 @@ const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
 while (walker.nextNode()) { const node = walker.currentNode; const text = node.nodeValue.trim(); if (Object.hasOwn(zh,text)) staticLabels.push({node,text}); }
 const placeholders = [...document.querySelectorAll('[placeholder]')].map(node => ({node,text:node.placeholder}));
 let lastNotice = '', lastNoticeError = false, evidenceSource;
-let token, paper, demo, polling, renderedMessages = '', renderedCards = '', providerPresets = {};
+let token, paper, demo, polling, renderedMessages = '', renderedCards = '', providerPresets = {}, readerMode = 'text', pdfKey = null, pdfReaderInstance = null;
 let libraryCollections = [], libraryItems = [], libraryScopeKey = null, libraryScopeName = 'Recently added', libraryNextOffset = null;
 function notice(message, error = false) { lastNotice = message; lastNoticeError = error; $('notice').textContent = tr(message); $('notice').classList.toggle('error', error); }
 function evidenceTitle(source) { return language === 'zh-CN' ? `原文 · PDF 第 ${source.page} 页${source.truncated ? ' · 节选' : ''}` : `Source · physical page ${source.page}${source.truncated ? ' · excerpt' : ''}`; }
@@ -109,6 +110,8 @@ function render() {
   $('paper-title').textContent = paper.title;
   $('paper-meta').textContent = language === 'zh-CN' ? `${paper.key} · PDF 共 ${paper.totalPages || '?'} 页 · 已预读 ${paper.preparedPages.length} 页 · 阅读记录修订 ${paper.memoryRevisions} 次` : `${paper.key} · ${paper.totalPages || '?'} PDF pages · ${paper.preparedPages.length} prepared · ${paper.memoryRevisions} study revisions`;
   const page = Number($('page').value); $('source').textContent = paper.pages[page]?.text || tr('Read this page to load its source text.');
+  const extraction = paper.pages[page]?.extraction;
+  if (extraction) $('extraction-state').textContent = tr(extraction === 'text-layer' ? 'Local PDF text layer' : 'Zotero extraction fallback');
   const busy = paper.job?.status === 'running';
   for (const id of ['ask','prepare','read-page']) $(id).disabled = busy;
   $('pause').disabled = !busy;
@@ -139,6 +142,39 @@ function render() {
       $('cards-pane').append(el);
     }
   }
+}
+function setReaderMode(mode) {
+  readerMode = mode === 'pdf' && !$('pdf-tab').hidden ? 'pdf' : 'text';
+  $('pdf-shell').hidden = readerMode !== 'pdf'; $('pdf-tools').hidden = readerMode !== 'pdf'; $('source').hidden = readerMode === 'pdf';
+  $('pdf-tab').classList.toggle('active',readerMode === 'pdf'); $('text-tab').classList.toggle('active',readerMode === 'text');
+}
+function pdfPage() {
+  return Number(pdfReaderInstance?.page) || Number($('page').value) || 1;
+}
+function showPdfPage(number) {
+  if ($('pdf-tab').hidden) return;
+  const page = Math.max(1,Number(number) || 1); $('page').value = String(page); setReaderMode('pdf');
+  if (pdfReaderInstance) pdfReaderInstance.page = page;
+}
+async function pdfReader() {
+  if (pdfReaderInstance) return pdfReaderInstance;
+  if (!window.createLocalPdfReader) await new Promise(resolve => window.addEventListener('local-pdf-reader-ready',resolve,{once:true}));
+  pdfReaderInstance = window.createLocalPdfReader($('pdf-frame'),$('pdf-viewer'));
+  return pdfReaderInstance;
+}
+async function loadPdf(key) {
+  const info = await api(`pdf-info?key=${encodeURIComponent(key)}`);
+  $('pdf-tab').hidden = !info.available;
+  if (!info.available) { pdfKey = null; $('extraction-state').textContent = tr('No local PDF; showing extracted text'); setReaderMode('text'); return; }
+  $('extraction-state').textContent = tr('Original PDF ready');
+  setReaderMode('pdf');
+  if (pdfKey !== key) {
+    pdfKey = key;
+    const file = `/api/pdf?key=${encodeURIComponent(key)}&token=${encodeURIComponent(token)}`;
+    const pages = await (await pdfReader()).open(file);
+    if (paper && !paper.totalPages) paper.totalPages = pages;
+  }
+  showPdfPage(Number($('page').value) || 1);
 }
 async function recent() { const items = await api('papers'); $('recent').replaceChildren(...items.map(item => button(item.title, () => open(item.key, true)))); }
 function renderLibraryItems() {
@@ -177,7 +213,7 @@ async function loadCollection(collection, append = false) {
 async function open(key, cached = false) {
   clearTimeout(polling); notice(cached ? 'Opening saved reading workspace…' : 'Reading through zotero-mcp…');
   paper = await api(cached ? `paper?key=${encodeURIComponent(key)}` : 'open', cached ? undefined : { key, page: 1 });
-  $('key').value = key; $('page').value = '1'; renderedMessages = ''; renderedCards = ''; render(); await recent();
+  $('key').value = key; $('page').value = '1'; renderedMessages = ''; renderedCards = ''; render(); await Promise.all([recent(),loadPdf(key)]);
   notice(demo ? 'Scripted demo: no real model requests and no Zotero changes.' : 'Paper ready. Questions send retrieved evidence to your configured provider.');
   if (paper.job?.status === 'running') poll();
 }
@@ -192,7 +228,7 @@ $('search-form').onsubmit = action(async () => {
 $('open-form').onsubmit = action(() => open($('key').value.trim().toUpperCase()));
 $('connect').onclick = action(loadLibrary); $('refresh-library').onclick = action(loadLibrary);
 $('more-items').onclick = action(async () => { const collection = libraryCollections.find(value => value.key === libraryScopeKey); if (collection && libraryNextOffset != null) await loadCollection(collection,true); });
-$('read-page').onclick = action(async () => { if (!paper) throw new Error('Open a paper first.'); notice('Reading source page…'); paper = await api('open', { key: paper.key, page: Number($('page').value) }); render(); notice('Source page loaded.'); });
+$('read-page').onclick = action(async () => { if (!paper) throw new Error('Open a paper first.'); const page = readerMode === 'pdf' ? pdfPage() : Number($('page').value); $('page').value = String(page); notice('Reading source page…'); paper = await api('open', { key: paper.key, page }); render(); setReaderMode('text'); notice('Source page loaded.'); });
 $('ask-form').onsubmit = action(async () => {
   if (!paper) throw new Error('Open a paper first.');
   await api('run', { key: paper.key, question: $('question').value, page: Number($('page').value) });
@@ -205,10 +241,20 @@ $('prepare').onclick = action(async () => {
 });
 $('pause').onclick = action(async () => { if (paper) { await api('pause', { key: paper.key }); notice('Pause requested. Completed preparation pages are kept.'); poll(); } });
 $('use-selection').onclick = action(() => {
+  let selected = '', selectedPage = Number($('page').value) || 1;
   const selection = window.getSelection(); const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
-  if (!range || !$('source').contains(range.commonAncestorContainer) || !selection.toString().trim()) throw new Error('Select text in the source passage first.');
-  $('question').value = `${language === 'zh-CN' ? `关于第 ${$('page').value} 页的这段文字：` : `About this passage on page ${$('page').value}:`}\n“${selection.toString().slice(0,4000)}”\n\n`; $('question').focus();
+  if (readerMode === 'pdf') { if (range && $('pdf-frame').contains(range.commonAncestorContainer)) { selected = selection.toString().trim(); selectedPage = pdfPage(); } }
+  else if (range && $('source').contains(range.commonAncestorContainer)) selected = selection.toString().trim();
+  if (!selected) throw new Error('Select text in the source passage first.');
+  $('page').value = String(selectedPage); $('question').value = `${language === 'zh-CN' ? `关于第 ${selectedPage} 页的这段文字：` : `About this passage on page ${selectedPage}:`}\n“${selected.slice(0,4000)}”\n\n`; $('question').focus();
 });
+$('pdf-tab').onclick = () => setReaderMode('pdf'); $('text-tab').onclick = () => setReaderMode('text');
+$('page').onchange = () => { if (readerMode === 'pdf') showPdfPage($('page').value); };
+$('pdf-prev').onclick = () => showPdfPage(pdfPage() - 1); $('pdf-next').onclick = () => showPdfPage(pdfPage() + 1);
+$('pdf-out').onclick = () => pdfReaderInstance?.zoom(1 / 1.2); $('pdf-in').onclick = () => pdfReaderInstance?.zoom(1.2); $('pdf-fit').onclick = () => pdfReaderInstance?.fit();
+$('pdf-find-next').onclick = () => pdfReaderInstance?.find($('pdf-find').value); $('pdf-find').onkeydown = event => { if (event.key === 'Enter') { event.preventDefault(); pdfReaderInstance?.find($('pdf-find').value); } };
+window.addEventListener('local-pdf-page',event => { if (readerMode === 'pdf') $('page').value = String(event.detail.page); });
+window.addEventListener('local-pdf-find',event => { const { current = 0, total = 0 } = event.detail || {}; $('pdf-find-state').textContent = total ? `${current}/${total}` : ''; });
 function tab(cards) { $('cards-pane').hidden = !cards; $('chat-pane').hidden = cards; $('cards-tab').classList.toggle('active',cards); $('chat-tab').classList.toggle('active',!cards); }
 $('chat-tab').onclick = () => tab(false); $('cards-tab').onclick = () => tab(true);
 function renderProviderPreset(fill) {

@@ -26,7 +26,7 @@ Requirements: Node.js 22 or newer, [uv](https://docs.astral.sh/uv/), and Zotero 
 2. Run `start-windows.cmd`, or `npm start`.
 3. Open **Settings**, choose a provider template, confirm its editable endpoint and model, then enter the matching API key.
 4. Browse the Zotero collection tree and item list, or search by title or author. Select an item to read it directly. You can still open an eight-character item key from the collapsed advanced control.
-5. Read source pages and ask a question. Click page citations to inspect the exact extracted evidence used by the answer.
+5. Read the original PDF in the center pane with continuous scrolling, page navigation, zoom, selectable text and in-document search. Switch to **AI text** to inspect exactly what the assistant can cite.
 6. Review **Note cards**, edit a draft and choose **Accept / save edits**. Cards are currently saved locally, not published to Zotero.
 
 API workspace: <http://127.0.0.1:43140>.
@@ -37,7 +37,7 @@ For a quiet desktop launch, create a shortcut to `launch-windows.vbs`. It opens 
 
 For Gemini, use `https://generativelanguage.googleapis.com/v1beta/openai` and a model name available to your account. No model is selected automatically. The provider must support Chat Completions function calling and return the requested JSON answer shape. Other provider-specific features are not implied by endpoint compatibility.
 
-Opening and selecting source text does not call the model. **Discuss with AI** sends the current evidence, selected reader cards, recent discussion and private study summary to the configured provider. **Prepare paper** sends available PDF text page by page and can incur many requests. **Pause** stops further model work; clicking **Prepare paper** again resumes completed checkpoints. API failures appear in the progress area.
+Opening, searching and selecting the PDF does not call the model. **Extract this page** reads the local PDF text layer directly when available and falls back to zotero-mcp; it also does not call the model. **Discuss with AI** sends the current evidence, selected reader cards, recent discussion and private study summary to the configured provider. **Prepare paper** sends available PDF text page by page and can incur many requests. **Pause** stops further model work; clicking **Prepare paper** again resumes completed checkpoints. API failures appear in the progress area.
 
 ## Try without credentials
 
@@ -45,7 +45,7 @@ Run `demo-windows.cmd` or `npm run demo`, then open <http://127.0.0.1:43141>. A 
 
 ## What the harness currently enforces
 
-- The application allowlists Zotero collection browsing, collection items, recent items, search, item metadata and PDF page reads. The model itself gets only a numbered-page reader scoped to the selected paper.
+- The application allowlists Zotero collection browsing, collection items, recent items, search, item metadata and PDF page reads. Local PDFs are streamed read-only to Mozilla PDF.js and their text layers are cached for AI evidence. The model itself gets only a numbered-page reader scoped to the selected paper.
 - Maximum five model steps per question, three page calls per step, request timeout and bounded transient-error retries.
 - Evidence IDs derived from the returned page text; invented or missing IDs reject the response. This validates provenance, not the truth of an interpretation.
 - Serialized local saves, retry/fallback handling for Windows file locks, per-paper task exclusion, cancellation checks and page-by-page preparation checkpoints.
@@ -72,6 +72,6 @@ The last command checks live search, metadata and the first PDF page without cal
 
 ## Current boundaries
 
-This is an exploration of API orchestration, not the full proposed product. It shows extracted PDF text rather than a graphical PDF viewer. Preparation supports up to 200 pages and up to 18,000 characters of evidence per page; scans, formula layout and figures are not interpreted. Upstream may choose the primary PDF when a parent reference has multiple attachments; open a specific attachment key when necessary.
+This is an exploration of API orchestration, not the full proposed product. It now renders locally available PDFs with PDF.js while keeping a separate evidence-text view. Preparation supports up to 200 pages and up to 18,000 characters of evidence per page; image-only scans still need OCR, and formula layout or figures are not automatically interpreted by the text extractor. The first local PDF attachment is used when a parent reference has several PDFs.
 
 Zotero note publication, group-library identity, full attachment-version reconciliation, external web search, graphical sticky-note layout, and ChatGPT connection are not implemented. ChatGPT is reserved for a separate mode and is not a dependency of this one. A real paid model response has not been verified during development; tests use a mock HTTP provider and the scripted demo.

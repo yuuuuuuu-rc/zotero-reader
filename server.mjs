@@ -2,6 +2,7 @@ import http from 'node:http';
 import path from 'node:path';
 import os from 'node:os';
 import { readFile, readdir } from 'node:fs/promises';
+import { createReadStream } from 'node:fs';
 import { randomBytes } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
@@ -10,17 +11,19 @@ import { ZoteroBridge, itemKey } from './lib/zotero.mjs';
 import { DemoBridge, DemoProvider } from './lib/demo.mjs';
 import { Provider, PROVIDER_PRESETS, baseURL, inferProvider } from './lib/provider.mjs';
 import { Harness } from './lib/harness.mjs';
+import { PdfLibrary } from './lib/pdf.mjs';
 
 const ROOT = fileURLToPath(new URL('.', import.meta.url));
 export async function createApp({ demo = false, root, port = 43140 } = {}) {
   root ||= process.env.ZR_DATA_DIR || path.join(process.env.LOCALAPPDATA || path.join(os.homedir(), '.local/share'), 'ZoteroResearch', demo ? 'demo' : 'live');
-  const store = new Store(root), bridge = demo ? new DemoBridge() : new ZoteroBridge();
+  const pdfLibrary = demo ? null : new PdfLibrary();
+  const store = new Store(root), bridge = demo ? new DemoBridge() : new ZoteroBridge(pdfLibrary);
   const defaults = { provider: 'gemini', baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai', model: '', apiKey: '' };
   let settings = await store.read('settings.json', defaults);
   settings.provider = PROVIDER_PRESETS[settings.provider] ? settings.provider : inferProvider(settings.baseUrl);
   const harness = new Harness({ store, bridge, provider: demo ? new DemoProvider() : new Provider(settings) });
   const token = randomBytes(24).toString('hex');
-  const files = new Map([['/', ['index.html', 'text/html']], ['/app.js',['app.js','text/javascript']], ['/style.css',['style.css','text/css']], ['/library.css',['library.css','text/css']]]);
+  const files = new Map([['/', ['index.html', 'text/html']], ['/app.js',['app.js','text/javascript']], ['/pdf-reader.mjs',['pdf-reader.mjs','text/javascript']], ['/style.css',['style.css','text/css']], ['/library.css',['library.css','text/css']]]);
   // Interrupted jobs remain resumable, never run automatically after a restart.
   for (const name of await readdir(path.join(root, 'papers')).catch(() => [])) {
     if (!/^[A-Z0-9]{8}\.json$/.test(name)) continue;
@@ -40,6 +43,16 @@ export async function createApp({ demo = false, root, port = 43140 } = {}) {
       if (request.headers.host !== host && request.headers.host !== `localhost:${actualPort}`) return json(403, { error: 'Invalid local host.' });
       if (request.headers['sec-fetch-site'] === 'cross-site') return json(403, { error: 'Cross-site requests are not allowed.' });
       const url = new URL(request.url, `http://${host}`);
+      if (request.method === 'GET' && url.pathname.startsWith('/pdfjs/')) {
+        const pdfjsRoot = path.resolve(ROOT, 'node_modules', 'pdfjs-dist');
+        const target = path.resolve(pdfjsRoot, decodeURIComponent(url.pathname.slice('/pdfjs/'.length)));
+        if (target !== pdfjsRoot && !target.startsWith(`${pdfjsRoot}${path.sep}`)) return json(404, { error: 'Not found.' });
+        const extension = path.extname(target).toLowerCase();
+        const types = { '.html':'text/html', '.mjs':'text/javascript', '.js':'text/javascript', '.css':'text/css', '.png':'image/png', '.svg':'image/svg+xml', '.wasm':'application/wasm', '.bcmap':'application/octet-stream', '.properties':'text/plain', '.ttf':'font/ttf', '.pfb':'application/octet-stream' };
+        const body = await readFile(target);
+        response.writeHead(200, { 'Content-Type': `${types[extension] || 'application/octet-stream'}${['.html','.mjs','.js','.css','.properties'].includes(extension) ? '; charset=utf-8' : ''}`, 'Cache-Control': 'public, max-age=86400', 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'self' blob:; script-src 'self'; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:; connect-src 'self'; img-src 'self' blob: data:; font-src 'self' data:; frame-ancestors 'self'" });
+        return response.end(body);
+      }
       if (request.method === 'GET' && files.has(url.pathname)) {
         const [filename,type] = files.get(url.pathname);
         const body = await readFile(path.join(ROOT, 'public', filename));
@@ -47,6 +60,24 @@ export async function createApp({ demo = false, root, port = 43140 } = {}) {
         return response.end(body);
       }
       if (url.pathname === '/api/bootstrap' && request.method === 'GET') return json(200, { app: 'zotero-research', token, demo, dataDirectory: root, version: '0.1.0' });
+      if ((request.method === 'GET' || request.method === 'HEAD') && url.pathname === '/api/pdf') {
+        if (url.searchParams.get('token') !== token) return json(403, { error: 'Reload this local page to reconnect.' });
+        const file = await pdfLibrary?.resolve(itemKey(url.searchParams.get('key')));
+        if (!file) return json(404, { error: 'No local PDF attachment is available.' });
+        let start = 0, end = file.size - 1, status = 200;
+        const range = request.headers.range?.match(/^bytes=(\d*)-(\d*)$/);
+        if (request.headers.range && !range) { response.writeHead(416, { 'Content-Range': `bytes */${file.size}` }); return response.end(); }
+        if (range) {
+          start = range[1] ? Number(range[1]) : 0; end = range[2] ? Number(range[2]) : end;
+          if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start < 0 || start > end || end >= file.size) { response.writeHead(416, { 'Content-Range': `bytes */${file.size}` }); return response.end(); }
+          status = 206;
+        }
+        const headers = { 'Content-Type': 'application/pdf', 'Content-Length': String(end - start + 1), 'Accept-Ranges': 'bytes', 'Cache-Control': 'private, no-store', 'Content-Disposition': `inline; filename*=UTF-8''${encodeURIComponent(file.filename)}`, 'X-Content-Type-Options': 'nosniff' };
+        if (status === 206) headers['Content-Range'] = `bytes ${start}-${end}/${file.size}`;
+        response.writeHead(status, headers);
+        if (request.method === 'HEAD') return response.end();
+        return createReadStream(file.path, { start, end }).pipe(response);
+      }
       if (request.headers['x-research-token'] !== token) return json(403, { error: 'Reload this local page to reconnect.' });
       let body = {};
       if (request.method === 'POST') {
@@ -57,6 +88,7 @@ export async function createApp({ demo = false, root, port = 43140 } = {}) {
       }
       const route = `${request.method} ${url.pathname}`;
       if (route === 'GET /api/settings') return json(200, { provider: settings.provider, baseUrl: settings.baseUrl, model: settings.model, hasKey: Boolean(settings.apiKey), presets: PROVIDER_PRESETS });
+      if (route === 'GET /api/pdf-info') return json(200, pdfLibrary ? await pdfLibrary.info(itemKey(url.searchParams.get('key'))) : { available: false });
       if (route === 'POST /api/settings') {
         if (demo) throw new Error('Demo mode does not use or save API credentials.');
         if (harness.active.size) throw new Error('Pause active reading tasks before changing providers.');

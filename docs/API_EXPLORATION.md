@@ -2,7 +2,7 @@
 
 ## Result
 
-A separate local application now connects to zotero-mcp over stdio, reads PDF text and runs a bounded paper-specific model/tool loop. The browser mirrors Zotero's collection hierarchy and item list, with search as a secondary route, plus source evidence, discussion, citations and editable local note drafts. It does not depend on Inkleaf or ChatGPT.
+A separate local application now connects to zotero-mcp over stdio, resolves local Zotero PDF attachments read-only, and runs a bounded paper-specific model/tool loop. The browser mirrors Zotero's collection hierarchy and item list and embeds a continuous PDF.js reader with zoom, search and selectable text, plus AI evidence text, discussion, citations and editable local note drafts. It does not depend on Inkleaf or ChatGPT.
 
 The first harness is an explicit, small state machine in `lib/harness.mjs`. LangGraph remains an option if future branching and scheduling justify it; adding a framework now would not replace the required domain checks.
 
@@ -25,7 +25,7 @@ The provider transport was exercised against a local HTTP fixture. A real extern
 
 ## State and recovery
 
-Each selected paper has one local state file. A job changes from running to complete, failed or paused. Preparation checkpoints each page; restarting the server marks interrupted jobs paused. Retrying preparation skips the completed checkpoints. Saves to the same paper are serialized, and Windows sharing violations are retried before a safe copy fallback is used. Conversation failure leaves previous answers and accepted cards intact. Cancellation is checked again before committing a model result.
+Each selected paper has one local state file. A job changes from running to complete, failed or paused. Preparation checkpoints each page; restarting the server marks interrupted jobs paused. Retrying preparation skips the completed checkpoints. The local PDF attachment has a version fingerprint, so moving from legacy MCP extraction to the direct PDF text layer does not erase study memory, while an actual attachment replacement still invalidates preparation. Saves to the same paper are serialized, and Windows sharing violations are retried before a safe copy fallback is used. Conversation failure leaves previous answers and accepted cards intact. Cancellation is checked again before committing a model result.
 
 Study records contain summaries, evidence interpretation and unresolved questions; they are not hidden model reasoning. They are excluded from the public paper response. Reader cards can be edited and accepted separately. This preview keeps up to 30 study revisions and 20 revisions of each edited card.
 

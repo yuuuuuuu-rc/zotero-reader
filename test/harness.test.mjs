@@ -9,6 +9,7 @@ import { DemoBridge, DemoProvider } from '../lib/demo.mjs';
 import { Provider, baseURL, inferProvider, providerRequest } from '../lib/provider.mjs';
 import { createApp } from '../server.mjs';
 import { parseCollections, parseItems } from '../lib/zotero.mjs';
+import { textFromPdfItems } from '../lib/pdf.mjs';
 import http from 'node:http';
 
 async function fixture(t, provider = new DemoProvider()) {
@@ -48,6 +49,16 @@ test('Zotero markdown is projected into collection and item rows',()=>{
   const items=parseItems('# Items\n\n## 1. Paper title\n**Type:** journalArticle\n**Item Key:** ZXCV1234\n**Date:** 2026\n**Authors:** Doe, Jane\n**Attachments:** PDF, 1 attachment\n');
   assert.equal(items[0].title,'Paper title');assert.equal(items[0].hasPdf,true);assert.equal(items[0].authors,'Doe, Jane');
 });
+test('PDF text items are reconstructed into readable lines',()=>{
+  const text=textFromPdfItems([
+    {str:'A reliable',transform:[1,0,0,1,10,700]},
+    {str:'reader',transform:[1,0,0,1,80,700]},
+    {str:'preserves',transform:[1,0,0,1,10,680]},
+    {str:'hyphen-',transform:[1,0,0,1,80,680]},
+    {str:'ation.',transform:[1,0,0,1,10,660]},
+  ]);
+  assert.equal(text,'A reliable reader\npreserves hyphenation.');
+});
 test('fabricated citations and tools outside the scope are rejected without accepting notes',async t=>{
   const {store,harness}=await fixture(t,{async complete(){return {tokens:1,message:{content:JSON.stringify({answer:'A made-up claim [E0000000000000000]',memory:'bad',card:null})}};}});
   await harness.start('DEMO0001',{question:'A question',page:1});
@@ -81,6 +92,13 @@ test('preparation checkpoints resume without repeating completed pages',async t=
   await harness.start('DEMO0001',{prepare:true,page:1});
   paper=await finished(harness,store);assert.equal(paper.job.status,'complete');assert.equal(calls,4);assert.equal(Object.keys(paper.prepared).length,3);assert.equal(paper.messages.length,0);
 });
+test('switching from legacy MCP extraction to a versioned local text layer preserves study state',async t=>{
+  const {store,harness}=await fixture(t);const data=await store.paper('DEMO0001');
+  data.memory='Keep this study record.';data.prepared[1]=data.pages[1].hash;await store.savePaper(data);
+  harness.bridge={async metadata(){return {key:'DEMO0001',title:'Demo paper'};},async page(){return {page:1,text:'Reformatted but locally versioned page text.',totalPages:3,extraction:'text-layer',sourceVersion:'ATTACH01:100:200'};}};
+  await harness.load('DEMO0001',1);const migrated=await store.paper('DEMO0001');
+  assert.equal(migrated.memory,'Keep this study record.');assert.equal(migrated.prepared[1],migrated.pages[1].hash);assert.equal(migrated.warning,undefined);
+});
 test('cancelled model request cannot commit an answer or private memory',async t=>{
   let entered;const ready=new Promise(resolve=>entered=resolve);
   const {store,harness}=await fixture(t,{async complete(_m,_t,signal){entered();await new Promise((_r,reject)=>signal.addEventListener('abort',()=>reject(signal.reason),{once:true}));}});
@@ -102,6 +120,7 @@ test('HTTP endpoints hide secrets and private study records and protect mutation
   assert.equal((await fetch(`${url}/api/open`,{method:'POST',body:'{}'})).status,403);
   const opened=await (await post('open',{key:'DEMO0001',page:1})).json();assert.equal(opened.totalPages,3);assert.equal(opened.memory,undefined);
   const library=await fetch(`${url}/api/library`,{headers:{'X-Research-Token':boot.token}}).then(r=>r.json());assert.equal(library.collections[0].key,'DEMOCLL1');assert.equal(library.items[0].key,'DEMO0001');
+  const pdfInfo=await fetch(`${url}/api/pdf-info?key=DEMO0001`,{headers:{'X-Research-Token':boot.token}}).then(r=>r.json());assert.equal(pdfInfo.available,false);
   const search=await (await post('search',{query:'retrieval'})).json();assert.equal(search.items[0].key,'DEMO0001');
   await post('run',{key:'DEMO0001',page:1,question:'Evidence?'});const paper=await finished(app.harness,app.store);
   const publicState=await fetch(`${url}/api/paper?key=DEMO0001`,{headers:{'X-Research-Token':boot.token}}).then(r=>r.json());
